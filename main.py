@@ -130,10 +130,6 @@ champ_data = {
             "ESFP는 사교적이고 활기찬 연예인형입니다. 사미라는 화려한 공격과 콤보로 전장을 장악합니다. "
             "긍정적인 에너지와 즐거움을 추구하는 당신과 완벽하게 어울립니다. "
             "사미라의 활발하고 화려한 플레이는 ESFP의 열정적이고 밝은 성격을 잘 보여줍니다."
-        )
-    },
-}
-
 questions = [
     ("새로운 사람들과 어울릴 때 에너지가 넘친다", "E"),
     ("혼자 시간을 보내는 것이 편안하다", "I"),
@@ -204,12 +200,14 @@ button {
 
 if "step" not in st.session_state:
     st.session_state.step = 1
-if "scores" not in st.session_state:
-    st.session_state.scores = {"E":0,"I":0,"S":0,"N":0,"T":0,"F":0,"J":0,"P":0}
+
+# 질문에 대한 사용자 답변을 저장할 공간 초기화
+if "answers" not in st.session_state:
+    st.session_state.answers = {}
 
 def reset():
     st.session_state.step = 1
-    st.session_state.scores = {"E":0,"I":0,"S":0,"N":0,"T":0,"F":0,"J":0,"P":0}
+    st.session_state.answers = {}
 
 st.markdown('<div class="main">', unsafe_allow_html=True)
 
@@ -219,24 +217,34 @@ if st.session_state.step == 1:
 
     for i, (text, key) in enumerate(questions):
         st.markdown(f'<div class="question">{i+1}. {text}</div>', unsafe_allow_html=True)
-        choice = st.radio("", ("예", "아니오"), key=f"q{i}")
-        if choice == "예":
-            st.session_state.scores[key] += 1
-        else:
-            # 반대 지표 점수 추가 (예: E가 아니면 I, S 아니면 N 등)
-            opposite = {"E":"I", "I":"E", "S":"N", "N":"S", "T":"F", "F":"T"}
-            st.session_state.scores[opposite[key]] += 1
+        # 사용자가 선택한 답변 저장
+        choice = st.radio("", ("예", "아니오"), index=0 if st.session_state.answers.get(key) == "예" else 1, key=f"q{i}")
+        st.session_state.answers[key] = choice
 
     if st.button("🔍 챔피언 추천받기"):
-        st.session_state.step = 2
-        st.experimental_rerun()
+        # 최소 하나라도 답변 누락 없게 확인
+        if len(st.session_state.answers) < len(questions) or any(ans not in ["예","아니오"] for ans in st.session_state.answers.values()):
+            st.warning("모든 질문에 답변해 주세요!")
+        else:
+            st.session_state.step = 2
+            st.experimental_rerun()
 
 elif st.session_state.step == 2:
-    ei = "E" if st.session_state.scores["E"] >= st.session_state.scores["I"] else "I"
-    sn = "S" if st.session_state.scores["S"] >= st.session_state.scores["N"] else "N"
-    tf = "T" if st.session_state.scores["T"] >= st.session_state.scores["F"] else "F"
-    # J/P가 질문에 없으니 기본 J로 처리 (원하면 수정 가능)
-    jp = "J"
+    # 점수 계산
+    scores = {"E":0, "I":0, "S":0, "N":0, "T":0, "F":0}
+
+    # 각 문항 답변별 점수 부여
+    for key, ans in st.session_state.answers.items():
+        if ans == "예":
+            scores[key] += 1
+        else:
+            opposite = {"E":"I", "I":"E", "S":"N", "N":"S", "T":"F", "F":"T"}
+            scores[opposite[key]] += 1
+
+    ei = "E" if scores["E"] >= scores["I"] else "I"
+    sn = "S" if scores["S"] >= scores["N"] else "N"
+    tf = "T" if scores["T"] >= scores["F"] else "F"
+    jp = "J"  # 질문 없으니 임의 지정
 
     mbti = ei + sn + tf + jp
 
