@@ -130,13 +130,35 @@ champ_data = {
             "ESFP는 사교적이고 활기찬 연예인형입니다. 사미라는 화려한 공격과 콤보로 전장을 장악합니다. "
             "긍정적인 에너지와 즐거움을 추구하는 당신과 완벽하게 어울립니다. "
             "사미라의 활발하고 화려한 플레이는 ESFP의 열정적이고 밝은 성격을 잘 보여줍니다."
+        )
+    },
+}
+
 questions = [
     ("새로운 사람들과 어울릴 때 에너지가 넘친다", "E"),
     ("혼자 시간을 보내는 것이 편안하다", "I"),
+    ("사람들 앞에서 이야기하는 걸 즐긴다", "E"),
+    ("사적인 시간을 혼자 보내는 걸 선호한다", "I"),
+    ("사교적인 모임에서 활력이 생긴다", "E"),
+    ("혼자서 조용한 시간을 보내는 것을 좋아한다", "I"),
     ("현실적이고 구체적인 정보에 집중하는 편이다", "S"),
     ("상상력과 아이디어를 더 선호한다", "N"),
+    ("과거 경험에 기반해 결정을 내린다", "S"),
+    ("미래 가능성과 새로운 가능성을 생각하는 걸 좋아한다", "N"),
+    ("세부 사항에 주의를 기울이는 편이다", "S"),
+    ("큰 그림을 보는 걸 더 즐긴다", "N"),
     ("논리와 객관적인 판단을 우선시한다", "T"),
     ("다른 사람의 감정을 중요하게 생각한다", "F"),
+    ("문제를 해결할 때 감정보다 사실에 집중한다", "T"),
+    ("사람들의 감정에 공감하는 편이다", "F"),
+    ("비판할 때도 감정보다는 논리를 따른다", "T"),
+    ("친구의 기분을 살피는 데 신경을 많이 쓴다", "F"),
+    ("계획을 세우고 그것을 지키는 편이다", "J"),
+    ("즉흥적이고 융통성 있게 행동하는 편이다", "P"),
+    ("일정을 미리 짜는 걸 좋아한다", "J"),
+    ("변화에 빠르게 적응하는 편이다", "P"),
+    ("일을 체계적으로 처리하는 것을 선호한다", "J"),
+    ("즉흥적인 선택을 즐긴다", "P"),
 ]
 
 st.set_page_config(page_title="MBTI 롤 챔피언 추천기", page_icon="🎮", layout="centered")
@@ -192,60 +214,33 @@ h2 {
     margin-top: 55px;
     text-align: center;
 }
-button {
-    font-size: 18px;
-}
 </style>
 """, unsafe_allow_html=True)
 
-if "step" not in st.session_state:
-    st.session_state.step = 1
-
-# 질문에 대한 사용자 답변을 저장할 공간 초기화
-if "answers" not in st.session_state:
-    st.session_state.answers = {}
-
-def reset():
-    st.session_state.step = 1
-    st.session_state.answers = {}
-
 st.markdown('<div class="main">', unsafe_allow_html=True)
 
-if st.session_state.step == 1:
-    st.markdown('<h1>🎯 MBTI 기반 롤 챔피언 추천기</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="text-align:center; font-size:18px; color:#ccc;">6개의 질문에 답해서 나와 딱 맞는 챔피언을 만나보세요!</p>', unsafe_allow_html=True)
+st.markdown('<h1>🎯 MBTI 기반 롤 챔피언 추천기</h1>', unsafe_allow_html=True)
+st.markdown('<p style="text-align:center; font-size:18px; color:#ccc;">12개의 질문에 답해서 나와 딱 맞는 챔피언을 만나보세요!</p>', unsafe_allow_html=True)
 
-    for i, (text, key) in enumerate(questions):
-        st.markdown(f'<div class="question">{i+1}. {text}</div>', unsafe_allow_html=True)
-        # 사용자가 선택한 답변 저장
-        choice = st.radio("", ("예", "아니오"), index=0 if st.session_state.answers.get(key) == "예" else 1, key=f"q{i}")
-        st.session_state.answers[key] = choice
+st.header("📝 성격 질문")
 
-    if st.button("🔍 챔피언 추천받기"):
-        # 최소 하나라도 답변 누락 없게 확인
-        if len(st.session_state.answers) < len(questions) or any(ans not in ["예","아니오"] for ans in st.session_state.answers.values()):
-            st.warning("모든 질문에 답변해 주세요!")
-        else:
-            st.session_state.step = 2
-            st.experimental_rerun()
+scores = {"E":0,"I":0,"S":0,"N":0,"T":0,"F":0,"J":0,"P":0}
 
-elif st.session_state.step == 2:
-    # 점수 계산
-    scores = {"E":0, "I":0, "S":0, "N":0, "T":0, "F":0}
+for i in range(0,len(questions),2):
+    left_text, left_key = questions[i]
+    right_text, right_key = questions[i+1]
+    st.markdown(f'<div class="question">{(i//2)+1}. 다음 중 더 당신과 가까운 것은?</div>', unsafe_allow_html=True)
+    choice = st.radio("", (left_text,right_text), key=f"q{i}")
+    if choice == left_text:
+        scores[left_key] += 1
+    else:
+        scores[right_key] += 1
 
-    # 각 문항 답변별 점수 부여
-    for key, ans in st.session_state.answers.items():
-        if ans == "예":
-            scores[key] += 1
-        else:
-            opposite = {"E":"I", "I":"E", "S":"N", "N":"S", "T":"F", "F":"T"}
-            scores[opposite[key]] += 1
-
+if st.button("🔍 챔피언 추천받기"):
     ei = "E" if scores["E"] >= scores["I"] else "I"
     sn = "S" if scores["S"] >= scores["N"] else "N"
     tf = "T" if scores["T"] >= scores["F"] else "F"
-    jp = "J"  # 질문 없으니 임의 지정
-
+    jp = "J" if scores["J"] >= scores["P"] else "P"
     mbti = ei + sn + tf + jp
 
     st.markdown(f'<h2>🧠 당신의 MBTI 유형은: <span style="color:#bb86fc;">{mbti}</span></h2>', unsafe_allow_html=True)
@@ -258,9 +253,6 @@ elif st.session_state.step == 2:
     else:
         st.warning("아직 준비 중인 MBTI 유형이에요! 조금만 기다려 주세요.")
 
-    if st.button("🔄 다시 하기"):
-        reset()
-        st.experimental_rerun()
-
 st.markdown('</div>', unsafe_allow_html=True)
+
 st.markdown('<div class="footer">Made with ❤️ by ChatGPT | League of Legends & MBTI Fusion</div>', unsafe_allow_html=True)
